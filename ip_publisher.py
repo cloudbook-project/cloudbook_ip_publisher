@@ -34,6 +34,8 @@ def read_request():
 	dumpJSON(circle_id ,agent_id, ip_addr)
 	return "You belong to circle " + circle_id+ ". Saved your id " + agent_id + " and your IP " + ip_addr
 
+
+
 #Generates a file for each circle_id
 #Generates JSON file containing agents ids and their ip addresses, if the agent id already exists 
 #in the file, its ip address is updated
@@ -57,23 +59,22 @@ def dumpJSON(circle, agent, ip):
 		json_data=json.dumps(data)
 		fo.write(json_data)	
 		fo.close()
-	#If file is not empty, looks for agent_id to update info, if it's not found, adds it.
+	#If file is not empty, looks for agent_id to update info, if it's not found, creates it.
 	else:
 		fr = open("./directories/"+circle+".json", 'r')
 		directory = json.load(fr)
 		print ("-----------")
 		print (repr(directory))
-		for key in directory:
-			if key==agent:
-				directory[agent]["IP"]=ip
-				directory[agent]["timestamp"]=timestamp
-				print (repr(directory))
-				print ("-----------")
-				fo = open("./directories/"+circle+".json", 'w')
-				directory= json.dumps(directory)
-				fo.write(directory)
-				fo.close()
-				return
+		if agent in directory:
+			directory[agent]["IP"]=ip
+			directory[agent]["timestamp"]=timestamp
+			print (repr(directory))
+			print ("-----------")
+			fo = open("./directories/"+circle+".json", 'w')
+			directory= json.dumps(directory)
+			fo.write(directory)
+			fo.close()
+			return
 		
 		fr = open("./directories/"+circle+".json", 'r')
 		directory = json.load(fr)
@@ -86,6 +87,8 @@ def dumpJSON(circle, agent, ip):
 		fo.write(directory)
 		fo.close()
 	return
+
+
 
 #Generates a JSON file of a complete certain circle to be posted in the website
 @application.route("/getCircle", methods=['GET','POST'])
@@ -109,6 +112,8 @@ def get_circle():
 
 #URL format
 # http://localhost:3100/getCircle?circle_id=AAA
+
+
 
 #Returns the IP address of a certain agent
 @application.route("/getAgentIP", methods=['GET', 'POST'])
@@ -157,12 +162,17 @@ def refresh_IPs():
 				continue
 			if key[-5:] == ".json":
 				fr = open("./directories/"+key, 'r')
-				directory=json.load(fr)
+				try:
+					directory=json.load(fr)
+				except:
+					print ("Invalid file, continuing...")
+					fr.close()
+					continue
 				for agent in directory:
-					#timestamp already changed, jumps to next
+					#Timestamp already changed, jumps to next
 					if directory[agent]["timestamp"]=="None":
 						continue
-					#timestamp hasn't changed during 5 minutes. IP not valid.
+					#Timestamp hasn't changed during 5 minutes. IP not valid.
 					if directory[agent]["timestamp"]+300<=timestamp:
 						directory[agent]["IP"]="None"
 			
@@ -173,13 +183,16 @@ def refresh_IPs():
 			fo.close()
 		time.sleep(10)
 
+
+
 def flaskRun():
 	print("Starting Flask...")
-	application.run(debug=True, host="0.0.0.0", port=3100, threaded=True)
+	application.run(debug=False, host="0.0.0.0", port=3100, threaded=True)
+
+
 
 if __name__ == "__main__":
 	#Runs a Thread that checks the IPs that hasn't been updated
 	threading.Thread(target=refresh_IPs).start()
 	#Runs Flask
-	#flaskRun()
-	application.run(debug=True, host="0.0.0.0", port=3100, threaded=True)
+	flaskRun()
