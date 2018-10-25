@@ -9,6 +9,7 @@ import loader
 
 my_agent_ID = "None"
 my_circle_ID = "None"
+agents_ip = {}
 config_dict={}
 config_dict=loader.load_dictionary("config_agent.json")
 
@@ -42,6 +43,16 @@ def announceAgent():
 		print ("Error connecting with IP Publisher Server")
 
 
+def getAgentIP(agent_id):
+	if agent_id in agents_ip:
+		return agents_ip[agent_id]
+	else:
+		url = "http://localhost:3100/getAgentIP?circle_id=AAA&agent_id="+agent_id
+		with urllib.request.urlopen(url) as res:
+				data = json.loads(res.read().decode())
+				f, v =list(data.items())[0]
+				print (f)
 
 createAgentID()
 announceAgent()
+#getAgentIP("")
