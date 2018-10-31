@@ -12,7 +12,6 @@ import time
 
 application = Flask(__name__)
 
-#Default route
 @application.route("/", methods=['GET','POST'])
 def hello():
 	return "Welcome to Cloudbook IP Publisher Service"
@@ -99,6 +98,8 @@ def dumpJSON(circle, agent, ip):
 @application.route("/getCircle", methods=['GET','POST'])
 def get_circle():
 	circle_id=request.args.get('circle_id')
+
+	timestamp = time.time()
 	
 	#Security inputs check
 	#if len(circle_id)!=20:
@@ -113,6 +114,13 @@ def get_circle():
 	else:
 		fr = open("./directories/"+circle_id+".json", 'r')
 		directory = json.load(fr)
+		for agent in directory:
+			#Timestamp already changed, jumps to next
+			if directory[agent]["IP"]=="None":
+				continue
+			#Timestamp hasn't changed during 5 minutes. IP not valid.
+			if directory[agent]["timestamp"]+300<=timestamp:
+				directory[agent]["IP"]="None"
 		return jsonify(directory)
 
 #URL format
@@ -125,6 +133,8 @@ def get_circle():
 def get_agent():
 	circle_id=request.args.get('circle_id')
 	agent_id=request.args.get('agent_id')
+
+	timestamp = time.time()
 	
 	#Security inputs check
 	#if len(circle_id)!=20 or len(agent_id)!=20:
@@ -140,6 +150,8 @@ def get_agent():
 		fr = open("./directories/"+circle_id+".json", 'r')
 		directory = json.load(fr)
 		if agent_id in directory:
+			if directory[agent_id]["timestamp"]+300<=timestamp:
+				directory[agent_id]["IP"]="None"
 			data={}
 			data[directory[agent_id]["IP"]]={}
 			return jsonify(data)
@@ -151,42 +163,42 @@ def get_agent():
 
 
 #Deletes IP address if not refresed every 5 minutes.
-def refresh_IPs():
-	while(True):
-		print("Checking valid IPs...")
-		#actual time
-		timestamp = time.time()
-		#print (os.listdir("./directories/"))
-		#list of all files
-		files=os.listdir("./directories/")
-		if len(files) == 0:
-			continue
-		for key in files:
-			#Only analyses JSON files
-			if os.stat("./directories/"+key).st_size==0:
-				continue
-			if key[-5:] == ".json":
-				fr = open("./directories/"+key, 'r')
-				try:
-					directory=json.load(fr)
-				except:
-					print ("Invalid file, continuing...")
-					fr.close()
-					continue
-				for agent in directory:
-					#Timestamp already changed, jumps to next
-					if directory[agent]["IP"]=="None":
-						continue
-					#Timestamp hasn't changed during 5 minutes. IP not valid.
-					if directory[agent]["timestamp"]+300<=timestamp:
-						directory[agent]["IP"]="None"
-			
-			#Write changes
-			fo = open("./directories/"+key, 'w')
-			directory= json.dumps(directory)
-			fo.write(directory)
-			fo.close()
-		time.sleep(10)
+#f refresh_IPs():
+#while(True):
+#	print("Checking valid IPs...")
+#	#actual time
+#	timestamp = time.time()
+#	#print (os.listdir("./directories/"))
+#	#list of all files
+#	files=os.listdir("./directories/")
+#	if len(files) == 0:
+#		continue
+#	for key in files:
+#		#Only analyses JSON files
+#		if os.stat("./directories/"+key).st_size==0:
+#			continue
+#		if key[-5:] == ".json":
+#			fr = open("./directories/"+key, 'r')
+#			try:
+#				directory=json.load(fr)
+#			except:
+#				print ("Invalid file, continuing...")
+#				fr.close()
+#				continue
+#			for agent in directory:
+#				#Timestamp already changed, jumps to next
+#				if directory[agent]["IP"]=="None":
+#					continue
+#				#Timestamp hasn't changed during 5 minutes. IP not valid.
+#				if directory[agent]["timestamp"]+300<=timestamp:
+#					directory[agent]["IP"]="None"
+#		
+#		#Write changes
+#		fo = open("./directories/"+key, 'w')
+#		directory= json.dumps(directory)
+#		fo.write(directory)
+#		fo.close()
+#	time.sleep(10)
 
 
 
@@ -198,6 +210,6 @@ def flaskRun():
 
 if __name__ == "__main__":
 	#Runs a Thread that checks the IPs that hasn't been updated
-	threading.Thread(target=refresh_IPs).start()
+	#threading.Thread(target=refresh_IPs).start()
 	#Runs Flask
 	flaskRun()
