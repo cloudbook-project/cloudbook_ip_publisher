@@ -12,6 +12,11 @@ import time
 
 application = Flask(__name__)
 
+#Default route
+@application.route("/", methods=['GET','POST'])
+def hello():
+	return "Welcome to Cloudbook IP Publisher Service"
+
 #Processes the request to post agent id and ip address
 @application.route("/post", methods=['GET','POST'])
 def read_request():
@@ -170,7 +175,7 @@ def refresh_IPs():
 					continue
 				for agent in directory:
 					#Timestamp already changed, jumps to next
-					if directory[agent]["timestamp"]=="None":
+					if directory[agent]["IP"]=="None":
 						continue
 					#Timestamp hasn't changed during 5 minutes. IP not valid.
 					if directory[agent]["timestamp"]+300<=timestamp:
@@ -187,7 +192,7 @@ def refresh_IPs():
 
 def flaskRun():
 	print("Starting Flask...")
-	application.run(debug=False, host="0.0.0.0", port=3100, threaded=True)
+	application.run(debug=False, host="0.0.0.0", port=80, threaded=True)
 
 
 
